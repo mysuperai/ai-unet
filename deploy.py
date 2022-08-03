@@ -1,3 +1,5 @@
+#%%
+
 import shutil
 from pathlib import Path
 
@@ -9,7 +11,6 @@ from superai.meta_ai.schema import Schema
 if Path(".AISave").exists():
     shutil.rmtree(".AISave")
 
-
 template = AITemplate(
     input_schema=Schema(),
     output_schema=Schema(),
@@ -17,17 +18,8 @@ template = AITemplate(
     name="UNet_Template",
     description="Template for UNet model",
     model_class="ImportedUNetModel",
-    requirements=[
-        "matplotlib",
-        "numpy",
-        "Pillow",
-        "torch<1.11.0",
-        "torchvision",
-        "tqdm",
-        "wandb",
-        "opencv-python-headless==4.5.5.64",
-    ],
-    artifacts={"run": "setup/setup.sh"},
+    conda_env="conda.yml",
+    artifacts={"run": "setup/setup.sh"}
 )
 
 ai = AI(
@@ -39,7 +31,9 @@ ai = AI(
     description="Unet AI instance",
     weights_path="gen_model",
 )
-
+# ai.push(update_weights=True, overwrite=True)
 predictor = ai.deploy(
-    orchestrator=Orchestrator.AWS_EKS, enable_cuda=True
+    orchestrator=Orchestrator.LOCAL_DOCKER_K8S
 )
+
+#%%

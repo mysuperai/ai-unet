@@ -1,27 +1,27 @@
 import json
 import logging
-import re
 import sys
 import tarfile
 import tempfile
 from io import BytesIO
 from pathlib import Path
-from typing import Union, List, Tuple
+from typing import Tuple
 from urllib.request import urlopen, urlretrieve
 
 import PIL.Image
 import cv2
 import numpy as np
 import requests
+import superai_schema.universal_schema.task_schema_functions as df
 import torch
 from superai.meta_ai import BaseModel
 from superai.meta_ai.base.base_ai import default_random_seed
 from superai.meta_ai.parameters import HyperParameterSpec, ModelParameters
-from superai.meta_ai.schema import TrainerOutput, TaskInput
-import superai_schema.universal_schema.task_schema_functions as df
+from superai.meta_ai.schema import TrainerOutput
 from superai.utils import retry
-
 from tqdm import tqdm
+
+from superai_helper import get_image_url, obtain_schema_bound_results
 
 unet_path = Path(__file__).parent.absolute().joinpath("Pytorch-UNet")
 print(unet_path)
@@ -68,25 +68,8 @@ class ImportedUNetModel(BaseModel):
             raise FileNotFoundError(
                 f"No checkpoint found in {weights_path}. Content: {list(Path(weights_path).iterdir())}"
             )
-        self.net.load_state_dict(torch.load(weights_path))
+        self.net.load_state_dict(torch.load(Path(weights_path).joinpath(model_path[0])))
         logger.info("Model loaded")
-
-    @staticmethod
-    def convert_to_dataurl(url):
-        for cloudfront in [
-            "d14qrv7r39xn2f.cloudfront.net",  # dev
-            "d2cpodczaz39bz.cloudfront.net",  # prod
-            "drf9wm7h7lj0m.cloudfront.net",  # sandbox
-            "d3kxzxf0vuui76.cloudfront.net",  # stg
-        ]:
-            if cloudfront in url:
-                match = re.search(r"(?<=https:)(.*)(?=\?)", url).group(0)
-                substring = "data:" + match.replace(cloudfront + "/", "")
-                logger.info(
-                    f"Signed URL found. Returning this data URL instead -> {substring}"
-                )
-                return substring
-        return url
 
     @staticmethod
     def save_mask_as_file(mask: object, inst: int, predict_dir: str):
@@ -135,40 +118,11 @@ class ImportedUNetModel(BaseModel):
             f"Upload of tarfile completed with status code {response.status_code}"
         )
 
-    @staticmethod
-    def _new_schema_mask(prediction, choices):
-        lower_choices = [choice.lower() for choice in choices]
-        return {
-            "index": prediction["index"],
-            "selection": choices[lower_choices.index("teeth")],
-            "mask_url": prediction["maskUrl"],
-        }
-
-    def predict(self, task_inputs: Union[TaskInput, List[dict]], context=None):
+    def predict(self, task_inputs, context=None):
         logger.info(f"Task inputs: {task_inputs}")
 
         upload_url = task_inputs["upload_url"]
-
-        if "schema_instance" in task_inputs["parameters"]["output_schema"]:
-            image_url = task_inputs["parameters"]["output_schema"]["schema_instance"][
-                "imageUrl"
-            ]
-            task_inputs["parameters"]["output_schema"]["schema_instance"][
-                "imageUrl"
-            ] = self.convert_to_dataurl(image_url)
-            new_schema = False
-        elif "formData" in task_inputs["parameters"]["output_schema"]:
-            image_url = task_inputs["parameters"]["output_schema"]["formData"]["url"]
-            task_inputs["parameters"]["output_schema"]["formData"][
-                "url"
-            ] = self.convert_to_dataurl(image_url)
-            new_schema = True
-        else:
-            logger.fatal(
-                "Can't find neither old nor new schema paradigm, can't return a result"
-            )
-            return
-
+        image_url, task_inputs = get_image_url(task_inputs)
         # download image
         with tempfile.NamedTemporaryFile(suffix=".jpg") as temp_file:
             urlretrieve(image_url, temp_file.name)
@@ -186,35 +140,7 @@ class ImportedUNetModel(BaseModel):
             tar_obj = self.tar_output_files(prediction_dir)
             self.upload_tarobj(tar_obj, upload_url)
 
-        empty_prediction = False
-        if not instances:
-            empty_prediction = True
-            instances = [{"prediction": {}}]
-
-        if new_schema:
-            task_inputs["parameters"]["output_schema"]["formData"]["annotations"] = [
-                self._new_schema_mask(
-                    instance["prediction"],
-                    task_inputs["parameters"]["output_schema"]["uiSchema"][
-                        "ui:options"
-                    ]["choices"],
-                )
-                for instance in instances
-                if instance["prediction"]
-            ]
-            output_prediction = task_inputs["parameters"]["output_schema"]
-        else:
-            task_inputs["parameters"]["output_schema"]["schema_instance"][
-                "annotations"
-            ] = {"instances": [instance["prediction"] for instance in instances]}
-            output_prediction = [task_inputs["parameters"]["output_schema"]]
-
-        result = {
-            "prediction": output_prediction,
-            "score": (sum(instance["score"] for instance in instances) / len(instances))
-            if not empty_prediction
-            else 0,
-        }
+        result = obtain_schema_bound_results(instances, task_inputs)
 
         logger.info(f"Prediction result {result}")
         return result
