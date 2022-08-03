@@ -1,0 +1,16 @@
+template:
+  name: "UNetTemplate"
+  description: "Template for UNet based on https://github.com/milesial/Pytorch-UNet"
+  model_class: "ImportedUNetModel"
+  artifacts:
+    run: "setup/setup.sh"
+  requirements: "requirements.txt"
+instance:
+  name: unet
+  version: 1
+  description: "AI instance of UNet model"
+training_deploy_from_app:
+  app_id: 1020d4ca-3870-410c-ba9f-dc5331943576
+  task_name: l0_instance_segmentation
+  enable_cuda: true
+  download_base: true
