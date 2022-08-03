@@ -203,8 +203,6 @@ class ImportedUNetModel(BaseModel):
         callbacks=None,
         random_seed=default_random_seed,
     ) -> TrainerOutput:
-        device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        logger.info(f"Device: {device}")
         net = UNet(
             n_channels=model_parameters.get("n_channels", 3),
             n_classes=model_parameters.get("n_classes", 2),
@@ -212,9 +210,9 @@ class ImportedUNetModel(BaseModel):
         )
         if weights_path is not None and model_parameters.get("load", False) is True:
             weights_file = Path(weights_path).joinpath("weights.pth")
-            net.load_state_dict(torch.load(weights_file, map_location=device))
+            net.load_state_dict(torch.load(weights_file, map_location=self.device))
             logger.info(f"Model weights loaded from {weights_file}")
-        net.to(device)
+        net.to(self.device)
 
         dir_img, dir_mask = self.extract_superai_dataset(training_data)
         train.dir_img = dir_img
@@ -226,7 +224,7 @@ class ImportedUNetModel(BaseModel):
             epochs=hyperparameters.epochs,
             batch_size=hyperparameters.batch_size,
             learning_rate=hyperparameters.learning_rate,
-            device=device,
+            device=self.device,
             img_scale=hyperparameters.get("scale", 0.5),
             val_percent=hyperparameters.get("val_percent", 0.1),
             amp=hyperparameters.get("amp", False),
