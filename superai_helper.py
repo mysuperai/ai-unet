@@ -1,13 +1,15 @@
+"""
+Contains helper functions which will be moved into the superai SDK in the future
+"""
+
 import logging
 import re
 
 logger = logging.getLogger(__name__)
 
 
-def get_schema_type(task_inputs):
+def check_schema_type(task_inputs):
     if "schema_instance" in task_inputs["parameters"]["output_schema"]:
-        return False
-    elif "formData" in task_inputs["parameters"]["output_schema"]:
         return True
     else:
         logger.fatal(
@@ -19,19 +21,11 @@ def get_schema_type(task_inputs):
 
 
 def get_image_url(task_inputs):
-    new_schema = get_schema_type(task_inputs)
-    if new_schema:
-        image_url = task_inputs["parameters"]["output_schema"]["schema_instance"][
-            "imageUrl"
-        ]
-        task_inputs["parameters"]["output_schema"]["schema_instance"][
-            "imageUrl"
-        ] = convert_to_dataurl(image_url)
-    else:
-        image_url = task_inputs["parameters"]["output_schema"]["formData"]["url"]
-        task_inputs["parameters"]["output_schema"]["formData"][
-            "url"
-        ] = convert_to_dataurl(image_url)
+    check_schema_type(task_inputs)
+    image_url = task_inputs["parameters"]["output_schema"]["formData"]["url"]
+    task_inputs["parameters"]["output_schema"]["formData"][
+        "url"
+    ] = convert_to_dataurl(image_url)
     return image_url, task_inputs
 
 
@@ -49,24 +43,10 @@ def obtain_schema_bound_results(instances, task_inputs):
     if not instances:
         empty_prediction = True
         instances = [{"prediction": {}}]
-    new_schema = get_schema_type(task_inputs=task_inputs)
-    if new_schema:
-        task_inputs["parameters"]["output_schema"]["formData"]["annotations"] = [
-            _new_schema_mask(
-                instance["prediction"],
-                task_inputs["parameters"]["output_schema"]["uiSchema"]["ui:options"][
-                    "choices"
-                ],
-            )
-            for instance in instances
-            if instance["prediction"]
-        ]
-        output_prediction = task_inputs["parameters"]["output_schema"]
-    else:
-        task_inputs["parameters"]["output_schema"]["schema_instance"]["annotations"] = {
-            "instances": [instance["prediction"] for instance in instances]
-        }
-        output_prediction = [task_inputs["parameters"]["output_schema"]]
+    task_inputs["parameters"]["output_schema"]["schema_instance"]["annotations"] = {
+        "instances": [instance["prediction"] for instance in instances]
+    }
+    output_prediction = [task_inputs["parameters"]["output_schema"]]
 
     result = {
         "prediction": output_prediction,
