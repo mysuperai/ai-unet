@@ -1,7 +1,7 @@
 template:
   name: "UNetTemplate"
   description: "Template for UNet based on https://github.com/milesial/Pytorch-UNet"
-  model_class: "ImportedUNetModel"
+  model_class: "SuperaiUNetModel"
   artifacts:
     run: "setup/setup.sh"
   conda_env: "conda.yml"
