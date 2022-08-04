@@ -35,6 +35,8 @@ The Pytorch-UNet implementation contains simple train script containing methods 
    import sys
    from superai.meta_ai import BaseModel
    
+   ###################################################################################
+   
    unet_path = Path(__file__).parent.absolute().joinpath("Pytorch-UNet")
    sys.path.insert(0, str(unet_path))
    try:
@@ -44,8 +46,17 @@ The Pytorch-UNet implementation contains simple train script containing methods 
    except:
        raise Exception(f"train/predict file could not be imported from {unet_path}")
    
+   ###################################################################################
+   
    class SuperaiUNetModel(BaseModel):
-   ...
+      def predict(self, inputs, context=None):
+         """Call predict method code here"""
+         
+      def load_weights(self, weights_path):
+         """Load weights into UNet"""
+       
+      def train(self, **kwargs):
+         """Call train method code here"""
    ```
 
 ### Points to note while training
