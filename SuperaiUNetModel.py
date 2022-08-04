@@ -36,7 +36,7 @@ except:
 logger = logging.getLogger(__name__)
 
 
-class ImportedUNetModel(BaseModel):
+class SuperaiUNetModel(BaseModel):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
 
