@@ -3,6 +3,13 @@ SuperAI BaseModel compatible implementation of UNet from https://github.com/mile
 
 This implementation illustrates how an open source model can be integrated into super.Ai by using the `BaseModel` interface. This allows us take care of the model operations such as automatic retraining, model drift detection, etc.
 
+## Introduction
+The Super.AI SDK allows developers to easily prepare any Machine Learning model for deployment on the Super.AI platform. The model functions are wrapped inside our base model interface and then placed in a Docker container for deployment.
+
+![SuperAi Model Integration Diagram](https://github.com/mysuperai/ai-unet/blob/main/img/superai_container.png?raw=true)
+
+The BaseModel Interface guides the mapping of relevant functions of the model with a python class-bound object that the Super.AI back-end is able to communicate with directly without further modifications to the model code itself, utilizing simple module imports. This allows Super.AI to take care of all the model operations such as prediction, automatic retraining, model drift detection, etc. Simply clone all the model code along with the wrapper and configuration files inside a docker container (which can be built using the SDK) and then deployed into Meta AI - Super.AI’s fully scalable model training and prediction registry.
+
 ## Training method
 The Pytorch-UNet implementation contains simple train script containing methods which start training, namely the `train_net` method. This initializes the model, sets up the data loader and performs metric tracking based on the hyperparameters passed in the arguments. We plan on re-using this method to prevent code duplication. 
 
