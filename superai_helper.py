@@ -22,20 +22,13 @@ def check_schema_type(task_inputs):
 
 def get_image_url(task_inputs):
     check_schema_type(task_inputs)
-    image_url = task_inputs["parameters"]["output_schema"]["formData"]["url"]
-    task_inputs["parameters"]["output_schema"]["formData"][
-        "url"
+    image_url = task_inputs["parameters"]["output_schema"]["schema_instance"][
+        "imageUrl"
+    ]
+    task_inputs["parameters"]["output_schema"]["schema_instance"][
+        "imageUrl"
     ] = convert_to_dataurl(image_url)
     return image_url, task_inputs
-
-
-def _new_schema_mask(prediction, choices):
-    lower_choices = [choice.lower() for choice in choices]
-    return {
-        "index": prediction["index"],
-        "selection": choices[lower_choices.index("teeth")],
-        "mask_url": prediction["maskUrl"],
-    }
 
 
 def obtain_schema_bound_results(instances, task_inputs):

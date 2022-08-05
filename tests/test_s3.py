@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 import pytest
@@ -14,6 +15,7 @@ except ImportError:
 
 @pytest.fixture
 def ai_object():
+    sys.path.insert(0, str(Path(__file__).parent.parent.absolute()))
     template = AITemplate(
         input_schema=Schema(),
         output_schema=Schema(),
@@ -21,8 +23,9 @@ def ai_object():
         name="Unet_template",
         description="template of Unet model",
         model_class="SuperaiUNetModel",
-        model_class_path=str(Path(__file__).parent.parent.absolute()),
-        artifacts={"run": "setup/setup.sh"},
+        artifacts={
+            "run": str(Path(__file__).parent.parent.absolute() / "setup/setup.sh")
+        },
         conda_env=str(Path(__file__).parent.parent.absolute() / "conda.yml"),
     )
     instance = AI(
@@ -67,8 +70,22 @@ def generate_upload_url(s3_client, s3_resource):
     )
     assert url
     yield url
+    bucket.objects.all().delete()
     bucket.delete()
 
 
 def test_predict(ai_object, generate_upload_url):
-    assert ai_object.predict(inputs={"upload_url": generate_upload_url, })
+    prediction = ai_object.predict(
+        inputs={
+            "upload_url": generate_upload_url,
+            "parameters": {
+                "output_schema": {
+                    "schema_instance": {
+                        "imageUrl": "https://cdn.super.ai/car-example.jpg"
+                    }
+                }
+            },
+        }
+    )
+    print(prediction)
+    assert prediction
