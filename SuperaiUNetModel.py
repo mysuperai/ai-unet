@@ -111,7 +111,6 @@ class SuperaiUNetModel(BaseModel):
             color="#FFFFFF",
             index=inst,
         )["schema_instance"]
-        print(scores)
         return {"prediction": schema_object, "score": float(scores[inst])}
 
     @staticmethod
