@@ -98,7 +98,9 @@ class SuperaiUNetModel(BaseModel):
         scores = prediction["scores"]
 
         logger.info(f"processing mask number {inst}")
-        filename = self.save_mask_as_file(new_masks[..., inst], inst, prediction_dir)
+        filename = self.save_mask_as_file(
+            (new_masks[inst] * 255).astype(np.uint8), inst, prediction_dir
+        )
         data_uri = f"data://{filename}"
 
         schema_object = df.image_segment(
@@ -163,7 +165,7 @@ class SuperaiUNetModel(BaseModel):
         instances = []
         with tempfile.TemporaryDirectory() as prediction_dir:
             # store masks in local temp file system
-            for inst in range(len(prediction["new_masks"])):
+            for inst in range(len(prediction["scores"])):
                 instances.append(self._handle_mask(prediction, inst, prediction_dir))
 
             # compress and upload the masks
@@ -192,7 +194,7 @@ class SuperaiUNetModel(BaseModel):
             device=self.device,
         )
 
-        return {"new_masks": [mask], "scores": [1.0]}
+        return {"new_masks": mask, "scores": [1.0]}
 
     @staticmethod
     def extract_superai_dataset(training_data: str) -> Tuple[Path, Path]:

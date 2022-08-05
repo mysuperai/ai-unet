@@ -1,0 +1,8 @@
+pytest
+localstack
+pytest-httpserver
+cbor2
+boto
+moto
+quart
+flask-cors
